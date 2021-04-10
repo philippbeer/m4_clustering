@@ -88,6 +88,32 @@ def shorten_time_series(df: pd.DataFrame) -> pd.DataFrame:
     sorted_df = sorted_df[['V1', 'timestamp', 'value']]
     return sorted_df
 
+def melt_time_series(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    shorten time series to shortest series selected
+    to match required shape for NN for forecasting
+    assumes column V1 is available as time series identifier
+    assume timestamp is stored as V2, V3, V4, ..., Vn
+    Params:
+    -------
+    df : dataframe to be shortened
+    Returns:
+    -------
+    sorted_df : shortened and sorted dataframe 
+    """
+    print('#### Shortening all series to shortest time series ####')
+    melted = df.melt(id_vars=['V1'])
+    # add timestep that allows for sorting
+    melted['timestamp'] = melted['variable'].str[1:].astype(int)
+    # remove all rows with NaNs
+    melted.dropna(inplace=True)
+    # sort each series by timestamp and
+    sorted_df = melted.sort_values(by=['V1', 'timestamp'])
+    sorted_df.drop('variable', inplace=True, axis=1)
+    sorted_df.reset_index(drop=True, inplace=True)
+    sorted_df = sorted_df[['V1', 'timestamp', 'value']]
+    return sorted_df
+
 
 def standardize(df: pd.DataFrame,
                 scaler: MinMaxScaler = None,

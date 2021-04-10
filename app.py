@@ -15,12 +15,10 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, silhouette_samples
 
 from sklearn.preprocessing import MinMaxScaler
-from tsfresh import extract_features, select_features
-from tsfresh.utilities.dataframe_functions import impute, \
-    roll_time_series, \
-    make_forecasting_frame
+
 
 import config as cnf
+import feature_extraction as fe
 import forecasting as fc
 import preprocessing as pp
 import utils as utils
@@ -60,19 +58,42 @@ if __name__ == "__main__":
         print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
     # format data for tsfresh
-    df_ts = pp.shorten_time_series(df_train)
+    df_ts = pp.melt_time_series(df_train)
 
-    # extract features
-    extracted_features = extract_features(df_ts, column_id="V1", column_sort='timestamp')
-    impute(extracted_features)
-    # TODO -set up y
-    # features_filtered = select_features(extracted_features,y);
-
-    # features = features_filtered.to_numpy()
+    features = fe.generate_features(df_ts)
+    print(features[:10])
+    print('#### feature extraction completed ####')
+    print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
     # run entire dataframe
     smape, mase = fc.run_forecasting_process(df_train, df_test, df_ts)
     print('sMAPE: {:.2f}\nMASE: {:.2f}'.format(smape, mase))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
