@@ -1,10 +1,20 @@
 """
 This module organize the visualization functions
 """
+import math
+import os
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator, FixedFormatter
+import numpy as np
+from sklearn.metrics import silhouette_samples
+
 
 def create_sil_diagram(kmeans_per_k, X,
                        top_scores_indexes,
-                       file_name) -> None:
+                       file_name,
+                       silhouette_scores) -> None:
     """
     create silhoutte diagram for passed models
     (adapted from HOML book)
