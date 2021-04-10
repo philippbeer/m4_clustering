@@ -30,12 +30,12 @@ def generate_lags(df: pd.DataFrame,
         lagged_series = df.groupby('V1',
                                    as_index=False)\
             .apply(lambda x: x['value'].shift(lag)).values
-    	df['lag_{}'.format(lag)] = lagged_series
+        df['lag_{}'.format(lag)] = lagged_series
     return df
 
 
 def generate_steps_ahead(df: pd.DataFrame,
-							steps_ahead: int = 7) -> pd.DataFrame:
+                            steps_ahead: int = 7) -> pd.DataFrame:
     """
     generates the y ahead steps for corresponding dataframe
     assumes column V1 as time series identifier
@@ -50,9 +50,9 @@ def generate_steps_ahead(df: pd.DataFrame,
     """
     print('#### Setting up y_train ####')
     for i in range(1, steps_ahead + 1):
-		step_ahead = df.groupby('V1', as_index=True)\
-		    .apply(lambda x: x['value'].shift(-i)).values
-    	df['step_{}'.format(i)] = step_ahead
+        step_ahead = df.groupby('V1', as_index=True)\
+            .apply(lambda x: x['value'].shift(-i)).values
+        df['step_{}'.format(i)] = step_ahead
     return df
 
 
@@ -102,17 +102,17 @@ def standardize(df: pd.DataFrame,
     (df, min_max_scaler) : transformed dataframe and corresponding scaler
     """
     if isinstance(scaler, MinMaxScaler):
-    x = df[tgt_col].to_numpy().reshape(-1, 1)
-    x_scaled = scaler.transform(x)
-    df[tgt_col] = x_scaled
-    return df
+        x = df[tgt_col].to_numpy().reshape(-1, 1)
+        x_scaled = scaler.transform(x)
+        df[tgt_col] = x_scaled
+        return df
     else:
         # standardize
-    x = df[tgt_col].to_numpy().reshape(-1, 1)  # returns a numpy array
-    min_max_scaler = MinMaxScaler()
-    x_scaled = min_max_scaler.fit_transform(x)
-    df[tgt_col] = x_scaled
-    return df, min_max_scaler
+        x = df[tgt_col].to_numpy().reshape(-1, 1)  # returns a numpy array
+        min_max_scaler = MinMaxScaler()
+        x_scaled = min_max_scaler.fit_transform(x)
+        df[tgt_col] = x_scaled
+        return df, min_max_scaler
 
 
 def destandardize(df: pd.DataFrame,
@@ -154,20 +154,20 @@ def normalize_data(df: pd.DataFrame,
     l_df_tmp = []  # keep temp dataframe
     df_res = pd.DataFrame()
     if standardizers == None:
-    standardizers = dict()
-    for name, group in df.groupby("V1"):
-        standardized, standardizer = standardize(group)  # returns a np.ndarray
-        standardizers[name] = standardizer
-        l_df_tmp.append(standardized)
-    df_res = pd.concat(l_df_tmp)
-    return df_res, standardizers
+        standardizers = dict()
+        for name, group in df.groupby("V1"):
+            standardized, standardizer = standardize(group)  # returns a np.ndarray
+            standardizers[name] = standardizer
+            l_df_tmp.append(standardized)
+        df_res = pd.concat(l_df_tmp)
+        return df_res, standardizers
     else:
-    for name, group in df.groupby('V1'):
-        scaler = standardizers[name]
-        standardized = standardize(group, scaler)
-        l_df_tmp.append(standardized)
-    df_res = pd.concat(l_df_tmp)
-    return df_res
+        for name, group in df.groupby('V1'):
+            scaler = standardizers[name]
+            standardized = standardize(group, scaler)
+            l_df_tmp.append(standardized)
+        df_res = pd.concat(l_df_tmp)
+        return df_res
 
 
 def denormalize_data(df: pd.DataFrame,
@@ -229,17 +229,13 @@ def create_train_test_datasets(df_train: pd.DataFrame,
 
     # generate df_X_test
     df_test_tmp = shorten_time_series(df_test)
-    #df_test_scaled, test_standardizers = normalize_data(df_test_tmp)
+    # df_test_scaled, test_standardizers = normalize_data(df_test_tmp)
     df_X_test_ext = create_test_set(df_X_y_train, df_test_tmp, standardizers)
     df_X_test = generate_lags(df_X_test_ext, lags)
     df_X_y_test = generate_steps_ahead(df_X_test, steps_ahead)
-    print('df_X_y_test:\n{}'.format(df_X_y_test[df_X_y_test].head()))
-    #     print('df_X_y_test: {}'.format(df_X_y_test[df_X_y_test['V1']=='D1017']))
     # remove rows with NaNs to clean up train and test set
     df_X_y_test.dropna(inplace=True)
     df_X_y_train.dropna(inplace=True)
-
-    #     print('df_X_y_train: {}'.format(df_X_y_train[df_X_y_train['V1']=='D1017']))
 
     # creating X_train and y_train numpy array
     df_X_y_train.drop(['V1', 'timestamp'], axis=1, inplace=True)
@@ -256,7 +252,6 @@ def create_train_test_datasets(df_train: pd.DataFrame,
     assert X_test.shape[0] == y_test.shape[0]
     assert X_train.shape[1] == X_test.shape[1]
     assert y_train.shape[1] == y_test.shape[1]
-
     return X_train, y_train, X_test, y_test, standardizers, ts_order
 
 
@@ -307,7 +302,7 @@ def create_test_set(df_train: pd.DataFrame,
         .apply(lambda x: modify_timestamps(x, max_steps))
     df_test_scaled = normalize_data(df_test, standardizers)
     df_X_y_test = df_tmp.append(df_test_scaled)
-    #df_X_y_test_scaled = normalize_data(df_X_y_test, standardizers)
+    # df_X_y_test_scaled = normalize_data(df_X_y_test, standardizers)
     df_X_y_test.sort_values(by=['V1', 'timestamp'], inplace=True)
     df_X_y_test.reset_index(drop=True, inplace=True)
     return df_X_y_test
