@@ -18,3 +18,8 @@ MAX_CLUSTER = 20
 
 MODELS_PATH = 'models'
 
+SCORES_FOLDER_PATH = 'scores'
+
+SIL_SCORES_FILE_PATH = 'silhouette_scores.txt'
+
+INERTIA_FILE_PATH = 'inertias.txt'

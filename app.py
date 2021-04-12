@@ -59,9 +59,6 @@ if __name__ == "__main__":
 
     # run kMeans clustering
     print('#### Starting clustering ####')
-    print(features.shape)
-    # features = features[:1000,:50]
-    # print(features.shape)
     clustering.cluster(features)
     print('#### clustering completed ####')
     print('#### {:3.2f}s elapsed ####'.format(time.time() - start))

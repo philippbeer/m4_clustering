@@ -15,5 +15,5 @@ def get_top_n_indexes(val_list: list, n: int = 3) -> list:
     top_indexes : list of indexes containing the highest N values
     """
     top_scores_sorted = sorted(val_list, reverse=True)
-    top_indexes = [val_list.index(val) for val in top_scores_sorted[:n + 1]]
+    top_indexes = [val_list.index(val) for val in top_scores_sorted[:n]]
     return top_indexes

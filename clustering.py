@@ -22,34 +22,61 @@ sns.set(font_scale=1.1, rc={'axes.facecolor': 'lightgrey'})
 
 def cluster(features: np.ndarray) -> None:
 	max_cluster = cnf.MAX_CLUSTER+1 # plus 1 to get desired cluster number
-	inertia = []
+	inertias = []
 	silhouette_scores = []
 
-	if os.path.exists(cnf.MODELS_PATH):
+	if os.path.exists(cnf.MODELS_PATH) and\
+		os.path.exists(cnf.SCORES_FOLDER_PATH):
 		print("#### Reading stored kMeans models")
 		all_files = os.listdir(cnf.MODELS_PATH)
 		all_files = filter(lambda x: x[-4:] == '.pkl', all_files)
 		kmeans_per_k = [pickle.load(open(cnf.MODELS_PATH+'/'+file_name, 'rb')) for file_name in all_files]
+
+		# reading scores
+		with open(cnf.SCORES_FOLDER_PATH+'/'+cnf.INERTIA_FILE_PATH, 'r') as filehandle:
+			for line in filehandle:
+				intertia = line[:-1] # remove linebreak
+				inertias.append(inertia)
+
+		with open(cnf.SCORES_FOLDER_PATH+'/'+cnf.SIL_SCORES_FILE_PATH, 'r') as filehandle:
+			for line in filehandle:
+				sil_score = line[:-1] #remove linebreak
+				silhouette_scores.append(silhouette_scores)
+
 	else:
 		print("#### Generate kMeans models ####")
 		kmeans_per_k = [KMeans(n_clusters=k, random_state=42).fit(features)
 		            for k in tqdm(range(2, max_cluster))]
 
-		if not os.path.exists('models'):
-		    os.mkdir('models')
+		if not os.path.exists(cnf.MODELS_PATH):
+		    os.mkdir(cnf.MODELS_PATH)
 
 		# save models locally
 		[pickle.dump(model[1], open(cnf.MODELS_PATH+'/kmeans_{}.pkl'.format(model[0]+2), 'wb')) for model in enumerate(kmeans_per_k)]
 		print("####kMeans models generated and saved locally ####")
 
-	# computing scores
-	print("####kMeans - computing inertia ####")
-	inertias = [model.inertia_ for model in tqdm(kmeans_per_k)]
-	print("####kMeans - computing silhouette scores ####")
-	silhouette_scores = [silhouette_score(features, model.labels_)
-	                     for model in tqdm(kmeans_per_k)]
+		if not os.path.exists(cnf.SCORES_FOLDER_PATH):
+			os.mkdir(cnf.SCORES_FOLDER_PATH)
+
+		# computing scores
+		print("####kMeans - gathering inertia per k ####")
+		inertias = [model.inertia_ for model in tqdm(kmeans_per_k)]
+		print("####kMeans - computing silhouette scores ####")
+		silhouette_scores = [silhouette_score(features, model.labels_)
+		                     for model in tqdm(kmeans_per_k)]
+
+		with open(cnf.SCORES_FOLDER_PATH+'/'+cnf.INERTIA_FILE_PATH, 'w') as filehandle:
+			for listitem in inertias:
+				filehandle.write('{}\n'.format(listitem))
+
+		with open(cnf.SCORES_FOLDER_PATH+'/'+cnf.SIL_SCORES_FILE_PATH, 'w') as filehandle:
+			for listitem in silhouette_scores:
+				filehandle.write('{}\n'.format(listitem))
+
+
 	# get index position of top N values
-	top_sil_score_indexes = utils.get_top_n_indexes(silhouette_scores, 4)
+	top_sil_score_indexes = utils.get_top_n_indexes(silhouette_scores, 5)
+
 
 	# create image - kMeans on word vector
 	fig, ax = plt.subplots(figsize=(8, 5))

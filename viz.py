@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FixedLocator, FixedFormatter
 import numpy as np
 from sklearn.metrics import silhouette_samples
+from tqdm import tqdm
 
 
 def create_sil_diagram(kmeans_per_k, X,
@@ -43,7 +44,8 @@ def create_sil_diagram(kmeans_per_k, X,
         pos = padding
         ticks = []
 
-        for i in range(k):
+        print('#### kMeans silhouette coefficient ####')
+        for i in tqdm(range(k)):
             coeffs = silhouette_coefficients[y_pred == i]
             coeffs.sort()
 
