@@ -4,6 +4,7 @@ This module handles the forecasting of the M4 time series.
 from typing import Tuple
 
 import numpy as np
+from scipy.ndimage.interpolation import shift
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
@@ -59,7 +60,17 @@ def predict(model, X_test: np.ndarray) -> np.ndarray:
     --------
     y_hat : array containing predictions
     """
-    y_hat = model.predict(X_test)
+    l = [] # list for individual predictions
+
+    for j in range(len(X_test)):
+        ar_tmp = X_test[j,:].reshape(1,8)
+        # generating steps ahead predictions
+        for i in range(cnf.STEPS_AHEAD):
+            y_hat = model.predict(ar_tmp)
+            ar_tmp = shift(ar_tmp[0,:], shift=1, cval=y_hat[0,0]).reshape(1,8)
+            l.append(y_hat)
+    # convert l into response y_test array
+    y_hat = np.concatenate(l, axis=0)
     return y_hat
 
 def run_forecasting_process(df_train, df_test, df_ts) -> Tuple[float,float]:
@@ -69,12 +80,14 @@ def run_forecasting_process(df_train, df_test, df_ts) -> Tuple[float,float]:
     X_train, y_train,\
         X_test, y_test,\
         standardizers,\
-        ts_order = pp.create_train_test_datasets(df_train,
+        ts_order,\
+        X_test_val = pp.create_train_test_datasets(df_train,
                                                  df_test,
                                                  lags=cnf.LAGS,
                                                  steps_ahead=cnf.STEPS_AHEAD)
 
     model = fit_forecasting_model(X_train, y_train)
+
 
     y_hat = predict(model, X_test)
     df_pred = postp.postprocess(y_test, y_hat,

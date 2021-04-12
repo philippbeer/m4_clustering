@@ -52,20 +52,30 @@ if __name__ == "__main__":
     # format data for tsfresh
     df_ts = pp.melt_time_series(df_train)
 
-    features = fe.generate_features(df_ts)
-    print('#### feature extraction completed ####')
-    print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
+    # features = fe.generate_features(df_ts)
+    # print('#### feature extraction completed ####')
+    # print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
 
-    # run kMeans clustering
-    print('#### Starting clustering ####')
-    clustering.cluster(features)
-    print('#### clustering completed ####')
-    print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
+    # # run kMeans clustering
+    # print('#### Starting clustering ####')
+    # top_kmeans_models = clustering.cluster(features)
+    # print('#### clustering completed ####')
+    # print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
+
+
+    #  for model in top_kmeans_model:
+    #  	model.labels_
+
+    #  	mix with df_train -> update df_test
+
+    #  	send each to NN
+
+    #  	compute smape, mase
 
     # run entire dataframe
-    # smape, mase = fc.run_forecasting_process(df_train, df_test, df_ts)
-    # print('sMAPE: {:.2f}\nMASE: {:.2f}'.format(smape, mase))
+    smape, mase = fc.run_forecasting_process(df_train, df_test, df_ts)
+    print('sMAPE: {:.2f}\nMASE: {:.2f}'.format(smape, mase))
 
 
 

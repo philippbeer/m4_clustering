@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
+import config as cnf
 
 def generate_lags(df: pd.DataFrame,
                   lags: List[int]) -> pd.DataFrame:
@@ -101,7 +102,7 @@ def melt_time_series(df: pd.DataFrame) -> pd.DataFrame:
     -------
     sorted_df : shortened and sorted dataframe 
     """
-    print('#### Shortening all series to shortest time series ####')
+    print('#### Melting time series ####')
     melted = df.melt(id_vars=['V1'])
     # add timestep that allows for sorting
     melted['timestamp'] = melted['variable'].str[1:].astype(int)
@@ -242,7 +243,7 @@ def create_train_test_datasets(df_train: pd.DataFrame,
     X_test, y_test, ts_order) : tuple of datasets, standardizers, ts_order
     """
     # compute X_train
-    df_train_tmp = shorten_time_series(df_train)
+    df_train_tmp = melt_time_series(df_train)
     df_train_scaled, standardizers = normalize_data(df_train_tmp)
     df_X_train = generate_lags(df_train_scaled, lags)
     df_X_y_train = generate_steps_ahead(df_X_train, steps_ahead)
@@ -254,13 +255,13 @@ def create_train_test_datasets(df_train: pd.DataFrame,
     df_X_y_train.dropna(subset=lag_cols, inplace=True)
 
     # generate df_X_test
-    df_test_tmp = shorten_time_series(df_test)
+    df_test_tmp = melt_time_series(df_test)
     # df_test_scaled, test_standardizers = normalize_data(df_test_tmp)
-    df_X_test_ext = create_test_set(df_X_y_train, df_test_tmp, standardizers)
-    df_X_test = generate_lags(df_X_test_ext, lags)
-    df_X_y_test = generate_steps_ahead(df_X_test, steps_ahead)
+    df_X_test_ext, df_train_last = create_test_set(df_X_y_train, df_test_tmp, standardizers)
+    df_X_test_val = generate_lags(df_X_test_ext, lags)
+    df_X_y_test_val = generate_steps_ahead(df_X_test_val, steps_ahead)
     # remove rows with NaNs to clean up train and test set
-    df_X_y_test.dropna(inplace=True)
+    df_X_y_test_val.dropna(inplace=True)
     df_X_y_train.dropna(inplace=True)
 
     # creating X_train and y_train numpy array
@@ -271,14 +272,21 @@ def create_train_test_datasets(df_train: pd.DataFrame,
     assert X_train.shape[0] == y_train.shape[0]
 
     # create X_test and y_test
-    ts_order = df_X_y_test['V1'].reset_index(drop=True)
-    df_X_y_test.drop(['V1', 'timestamp'], axis=1, inplace=True)
-    X_test = np.asarray(df_X_y_test.drop(step_cols, axis=1))
-    y_test = np.asarray(df_X_y_test.drop(lag_cols, axis=1))
-    assert X_test.shape[0] == y_test.shape[0]
+    ts_order = df_X_y_test_val['V1'].reset_index(drop=True)
+    df_X_y_test_val.drop(['V1', 'timestamp'], axis=1, inplace=True)
+    X_test_val = np.asarray(df_X_y_test_val.drop(step_cols, axis=1))
+    y_test = np.asarray(df_X_y_test_val.drop(lag_cols, axis=1))
+
+    # last train value setup
+    df_train_last.reset_index(inplace=True, drop=True)
+    df_train_last.drop(step_cols, axis=1, inplace=True)
+    X_test = np.asarray(df_train_last.drop(['timestamp'], axis=1))
+
+    # data shape checks
+    assert X_test.shape[0]*cnf.STEPS_AHEAD == y_test.shape[0], 'X_test * steps_ahead matches y_hat length'
     assert X_train.shape[1] == X_test.shape[1]
     assert y_train.shape[1] == y_test.shape[1]
-    return X_train, y_train, X_test, y_test, standardizers, ts_order
+    return X_train, y_train, X_test, y_test, standardizers, ts_order, X_test_val
 
 
 def modify_timestamps(df: pd.DataFrame,
@@ -321,14 +329,18 @@ def create_test_set(df_train: pd.DataFrame,
     """
     # extract records where steps ahead are incomplete
     df_train_lags = df_train[df_train.isna().any(axis=1)].copy()
+    #print('df_train_lags:\n{}'.format(df_train_lags.tail(20)))
+    df_train_last = df_train_lags.groupby(['V1']).max()
+    #print(df_train_last)
     df_tmp = df_train_lags[['V1', 'timestamp', 'value']]
     # retrieve last step id for each time series
     max_steps = df_tmp.groupby('V1')['timestamp'].max()
     df_test = df_test.groupby('V1', as_index=False)\
         .apply(lambda x: modify_timestamps(x, max_steps))
     df_test_scaled = normalize_data(df_test, standardizers)
-    df_X_y_test = df_tmp.append(df_test_scaled)
+    df_X_y_test_val = df_tmp.append(df_test_scaled)
     # df_X_y_test_scaled = normalize_data(df_X_y_test, standardizers)
-    df_X_y_test.sort_values(by=['V1', 'timestamp'], inplace=True)
-    df_X_y_test.reset_index(drop=True, inplace=True)
-    return df_X_y_test
+    df_X_y_test_val.sort_values(by=['V1', 'timestamp'], inplace=True)
+    df_X_y_test_val.reset_index(drop=True, inplace=True)
+    #print('df_X_y_test:\n{}'.format(df_X_y_test.tail(20)))
+    return df_X_y_test_val, df_train_last
