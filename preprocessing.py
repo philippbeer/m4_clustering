@@ -244,6 +244,7 @@ def create_train_test_datasets(df_train: pd.DataFrame,
     """
     # compute X_train
     df_train_tmp = melt_time_series(df_train)
+    print('df_train_tmp shape: {}'.format(df_train_tmp.shape))
     df_train_scaled, standardizers = normalize_data(df_train_tmp)
     df_X_train = generate_lags(df_train_scaled, lags)
     df_X_y_train = generate_steps_ahead(df_X_train, steps_ahead)
@@ -321,7 +322,7 @@ def create_test_set(df_train: pd.DataFrame,
     -------
     df_train : dataframe train set
     df_test : dataframe test set
-    scaler_d : dictonary of train scalers
+    scaler_d : dictionary of train scalers
     Returns:
     --------
     (df_test, test_standardizer) : adjusted test set and test standardizer
@@ -335,6 +336,8 @@ def create_test_set(df_train: pd.DataFrame,
     df_tmp = df_train_lags[['V1', 'timestamp', 'value']]
     # retrieve last step id for each time series
     max_steps = df_tmp.groupby('V1')['timestamp'].max()
+    print('max steps:\n{}'.format(max_steps))
+    print('df_test:\n{}:'.format(df_test['V1'].unique()))
     df_test = df_test.groupby('V1', as_index=False)\
         .apply(lambda x: modify_timestamps(x, max_steps))
     df_test_scaled = normalize_data(df_test, standardizers)
@@ -344,3 +347,19 @@ def create_test_set(df_train: pd.DataFrame,
     df_X_y_test_val.reset_index(drop=True, inplace=True)
     #print('df_X_y_test:\n{}'.format(df_X_y_test.tail(20)))
     return df_X_y_test_val, df_train_last
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

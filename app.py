@@ -7,7 +7,7 @@ import time
 
 import numpy as np
 import pandas as pd
-#from sklearn.preprocessing import MinMaxScaler
+
 
 
 import config as cnf
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         test = pd.read_csv(cnf.DAILY_TEST)
         elapsed = time.time()
         print('#### finished reading CSV files####')
-        print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
+        print('#### {:3.2f}s elapsed ####'.format(timer(features).time() - start))
         # sample training data
         print('#### beginning sampling of time series ####')
         df_train = train.sample(frac=cnf.SAMPLING)
@@ -50,19 +50,35 @@ if __name__ == "__main__":
         print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
     # format data for tsfresh
+    df_train = df_train.iloc[:25,0:50]
+    df_test = df_test.iloc[:25,:]
     df_ts = pp.melt_time_series(df_train)
 
-    # features = fe.generate_features(df_ts)
-    # print('#### feature extraction completed ####')
-    # print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
+    features = fe.generate_features(df_ts)
+    print('#### feature extraction completed ####')
+    print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
 
-    # # run kMeans clustering
-    # print('#### Starting clustering ####')
-    # top_kmeans_models = clustering.cluster(features)
-    # print('#### clustering completed ####')
-    # print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
+    # run kMeans clustering
+    print('#### Starting clustering ####')
+    top_kmeans_models = clustering.cluster(features.to_numpy())
+    print('#### clustering completed ####')
+    print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
+    print('features:\n{}'.format(features))
+    ts_ft_l = features.index.to_list()
+    df_train_clustered = pd.DataFrame()
+    for model in top_kmeans_models:
+    	k = model.cluster_centers_.shape[0]
+    	df_tmp = df_train.groupby('V1')\
+    					.apply(clustering.get_class_label,
+								model=model,
+    							ts_index_l=ts_ft_l, k=k)
+    	df_train_clustered = df_train_clustered.append(df_tmp)
+    	# print('Cluster Center shape:\n{}'.format(model.cluster_centers_.shape))
+    	# print('Labels shape:\n{}'.format(model.labels_.shape))
+    	# print('No. Labels:\n{}'.format(len(model.labels_)))
+    print('df_train_clustered:\n{}'.format(df_train_clustered.head()))
 
     #  for model in top_kmeans_model:
     #  	model.labels_
@@ -74,8 +90,8 @@ if __name__ == "__main__":
     #  	compute smape, mase
 
     # run entire dataframe
-    smape, mase = fc.run_forecasting_process(df_train, df_test, df_ts)
-    print('sMAPE: {:.2f}\nMASE: {:.2f}'.format(smape, mase))
+    # smape, mase = fc.run_forecasting_process(df_train, df_test, df_ts)
+    # print('sMAPE: {:.2f}\nMASE: {:.2f}'.format(smape, mase))
 
 
 

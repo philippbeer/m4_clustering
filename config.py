@@ -23,3 +23,7 @@ SCORES_FOLDER_PATH = 'scores'
 SIL_SCORES_FILE_PATH = 'silhouette_scores.txt'
 
 INERTIA_FILE_PATH = 'inertias.txt'
+
+TOP_MODELS = 5
+
+MAX_TIMESHIFT = 7

@@ -88,7 +88,6 @@ def run_forecasting_process(df_train, df_test, df_ts) -> Tuple[float,float]:
 
     model = fit_forecasting_model(X_train, y_train)
 
-
     y_hat = predict(model, X_test)
     df_pred = postp.postprocess(y_test, y_hat,
                 standardizers, ts_order)
