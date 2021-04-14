@@ -22,6 +22,8 @@ SCORES_FOLDER_PATH = 'scores'
 
 SIL_SCORES_FILE_PATH = 'silhouette_scores.txt'
 
+FORECASTING_RES_FILE_NAME ='fc_results.csv'
+
 INERTIA_FILE_PATH = 'inertias.txt'
 
 TOP_MODELS = 5

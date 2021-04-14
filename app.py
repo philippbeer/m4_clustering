@@ -4,7 +4,7 @@ This module contains the main logic
 
 import os
 import time
-#from typing import Dict, List, Tuple
+
 
 import numpy as np
 import pandas as pd
@@ -82,60 +82,32 @@ if __name__ == "__main__":
 													features,
 													top_kmeans_models)
 
-
-	
-
-	# print(clustered_data)
-	k_l = [] # hold cluster type
-	class_l = [] # hold class list
-	smape_l = [] # hold smape results
-	mase_l = [] # hold mase results
-	for k, classes in tqdm(clustered_data.items()): # each is model run
-		for class_label, data_dfs in classes.items():
-			print('Running k: {}, class: {} forecast'.format(k, class_label))
-			df_train_class = data_dfs[0]
-			df_test_class = data_dfs[1]
-			df_ts_class = data_dfs[2]
-			smape, mase = fc.run_forecasting_process(df_train_class,
-													df_test_class,
-													df_ts_class)
-			k_l.append(k)
-			class_l.append(class_label)
-			smape_l.append(smape)
-			mase_l.append(mase)
-
-	data_d = {'k': k_l,
-			  'class_label': class_l,
-			  'smape': smape_l,
-			  'mase': mase_l}
-	df_res = pd.DataFrame(data_d)
-
-	# run all results
+	# running clustered time series
+	df_res_kmeans = fc.batch_forecasting(clustered_data, 'kMeans')
+	# running randomly clustered time series
+	df_res_rnd = fc.batch_forecasting(clustered_data_rnd, 'random')
+	#running all time series in single training
 	smape, mase = fc.run_forecasting_process(df_train, df_test, df_ts)
 	df_k_1 = pd.DataFrame({'k': 0,
 						  'class_label': 0,
+						  'cluster_type': None,
+						  'class_size': df_train.shape[0],
 						  'smape': smape,
 						  'mase': mase}, index=[0])
-	df_res = df_res.append(df_k_1)
-	df_res.reset_index(inplace=True)
+	
+	df_res = pd.concat([df_res_kmeans, df_res_rnd, df_k_1])
+	df_res.reset_index(inplace=True, drop=True)
 
+	# write results to file
+	if os.path.exists(cnf.SCORES_FOLDER_PATH):
+		path = cnf.SCORES_FOLDER_PATH+'/'+cnf.FORECASTING_RES_FILE_NAME
+		df_res.to_csv(path, index=False)
+	else:
+		os.mkdir(cnf.SCORES_FOLDER_PATH)
+		path = cnf.SCORES_FOLDER_PATH+'/'+cnf.FORECASTING_RES_FILE_NAME
+		df_res.to_csv(path, index=False)
 
-
-	print('Results:\n{}'.format(df_res))
-
-
-	#  for model in top_kmeans_model:
-	#  	model.labels_
-
-	#  	mix with df_train -> update df_test
-
-	#  	send each to NN
-
-	#  	compute smape, mase
-
-	# run entire dataframe
-	# smape, mase = fc.run_forecasting_process(df_train, df_test, df_ts)
-	# print('sMAPE: {:.2f}\nMASE: {:.2f}'.format(smape, mase))
+	print('Results:\n{}'.format(df_res.head(101)))
 
 
 

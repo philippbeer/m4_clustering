@@ -23,6 +23,7 @@ def generate_lags(df: pd.DataFrame,
 	df : dataframe for which lags to be generated
 	lags : list of lags to be generated
 	Returns:
+	--------
 	df : dataframe with added lags
 	--------
 	"""
@@ -56,39 +57,6 @@ def generate_steps_ahead(df: pd.DataFrame,
 		df['step_{}'.format(i)]\
 		= step_ahead.T.squeeze().reset_index(drop=True)
 	return df
-
-
-def shorten_time_series(df: pd.DataFrame) -> pd.DataFrame:
-	"""
-	shorten time series to shortest series selected
-	to match required shape for NN for forecasting
-	assumes column V1 is available as time series identifier
-	assume timestamp is stored as V2, V3, V4, ..., Vn
-	Params:
-	-------
-	df : dataframe to be shortened
-	Returns:
-	-------
-	sorted_df : shortened and sorted dataframe 
-	"""
-	print('#### Shortening all series to shortest time series ####')
-	melted = df.melt(id_vars=['V1'])
-	# add timestep that allows for sorting
-	melted['timestamp'] = melted['variable'].str[1:].astype(int)
-	# remove all rows with NaNs
-	melted.dropna(inplace=True)
-	# get shortest time series
-	shortest_series_len = melted.groupby(
-		'V1')['value'].count().sort_values()[0]
-	# sort each series by timestamp and
-	# shorten series length of shortest (backwards from last timestamp)
-	sorted_df = melted.groupby('V1', as_index=False)\
-		.apply(lambda x: x.sort_values(by='timestamp', ascending=True)
-			   [-shortest_series_len:])
-	sorted_df.drop('variable', inplace=True, axis=1)
-	sorted_df.reset_index(drop=True, inplace=True)
-	sorted_df = sorted_df[['V1', 'timestamp', 'value']]
-	return sorted_df
 
 def melt_time_series(df: pd.DataFrame) -> pd.DataFrame:
 	"""
@@ -244,9 +212,7 @@ def create_train_test_datasets(df_train: pd.DataFrame,
 	"""
 	# compute X_train
 	df_train_tmp = melt_time_series(df_train)
-	#print('df_train_tmp:\n{}'.format(df_train_tmp.head(60)))
 	df_train_scaled, standardizers = normalize_data(df_train_tmp)
-	#print('df_train_scaled:\n{}'.format(df_train_scaled.head(60)))
 	df_X_train = generate_lags(df_train_scaled, lags)
 	df_X_y_train = generate_steps_ahead(df_X_train, steps_ahead)
 	# identify columns related to lags or steps ahead
@@ -331,15 +297,13 @@ def create_test_set(df_train: pd.DataFrame,
 	"""
 	# extract records where steps ahead are incomplete
 	df_train_lags = df_train[df_train.isna().any(axis=1)].copy()
-	#print('df_train_lags:\n{}'.format(df_train_lags.tail(20)))
+
 	df_train_last = df_train_lags.groupby(['V1']).max()
-	#print(df_train_last)
+
 	df_tmp = df_train_lags[['V1', 'timestamp', 'value']]
 
 	# retrieve last step id for each time series
 	max_steps = df_tmp.groupby('V1')['timestamp'].max()
-	print('max steps:\n{}'.format(max_steps))
-	print('df_test:\n{}:'.format(df_test['V1'].unique()))
 
 	df_test = df_test.groupby('V1', as_index=False)\
 		.apply(lambda x: modify_timestamps(x, max_steps))

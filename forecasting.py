@@ -1,19 +1,24 @@
 """
 This module handles the forecasting of the M4 time series.
 """
-from typing import Tuple
+from typing import Dict, Tuple
 
 import numpy as np
+import pandas as pd
 from scipy.ndimage.interpolation import shift
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+from tqdm import tqdm
 
 import config as cnf
 import error_metrics as em
 import preprocessing as pp
 import postprocessing as postp
 
-
+# set up data structures
+kmeans_data = Dict[int, Dict[int, Tuple[pd.DataFrame,
+                                            pd.DataFrame,
+                                            pd.DataFrame]]]
 
 
 def fit_forecasting_model(X_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
@@ -98,3 +103,50 @@ def run_forecasting_process(df_train, df_test, df_ts) -> Tuple[float,float]:
     # MASE
     mase = em.compute_mase(df_pred, df_ts)
     return smape, mase
+
+def batch_forecasting(clustered_data: kmeans_data,
+                        cluster_type: 'str') -> pd.DataFrame:
+    """
+    executes forecasting process on kMeans dictionary
+    and computes error metrics
+    Params:
+    -------
+    Returns:
+    --------
+
+    """
+    # set lists for results
+    k_l = [] # hold cluster type
+    class_l = [] # hold class list
+    class_size_l = []
+    smape_l = [] # hold smape results
+    mase_l = [] # hold mase results
+    for k, classes in tqdm(clustered_data.items()): # each is model run
+        for class_label, data_dfs in classes.items():
+            print('Running {} k: {}, class: {} forecast'.format(cluster_type, k, class_label))
+            # get class ratio
+            df_train_class = data_dfs[0]
+            df_test_class = data_dfs[1]
+            df_ts_class = data_dfs[2]
+            smape, mase = run_forecasting_process(df_train_class,
+                                                    df_test_class,
+                                                    df_ts_class)
+
+            # get class ratio
+            class_size = df_train_class.shape[0]
+
+            k_l.append(k)
+            class_l.append(class_label)
+            class_size_l.append(class_size)
+            smape_l.append(smape)
+            mase_l.append(mase)
+
+    data_d = {'k': k_l,
+                'cluster_type': cluster_type,
+              'class_label': class_l,
+              'class_size': class_size_l,
+              'smape': smape_l,
+              'mase': mase_l}
+    df_res = pd.DataFrame(data_d)
+
+    return df_res

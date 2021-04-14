@@ -1,2 +1,5 @@
-__pycache__/
+/__pycache__/*
+/models/*
+/models_bkp/*
+/scores_bkp/*
 *.csv

@@ -190,7 +190,8 @@ def separate_data_by_k(df_train: pd.DataFrame,
 			d_rnd[class_label] = (df_train_tmp_rnd, df_test_tmp_rnd, df_ts_tmp_rnd)
 
 		clustered_data[k] = d
-		clustered_data[k] = d_rnd
+		clustered_data_rnd[k] = d_rnd
+
 
 	return clustered_data, clustered_data_rnd
 
