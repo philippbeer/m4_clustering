@@ -26,6 +26,8 @@ FORECASTING_RES_FILE_NAME ='fc_results.csv'
 
 INERTIA_FILE_PATH = 'inertias.txt'
 
-TOP_MODELS = 5
+TOP_MODELS = 3
 
 MAX_TIMESHIFT = 7
+
+KFOLD = 3

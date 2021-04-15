@@ -1,14 +1,17 @@
 """
 This module handles the preprocessing steps
 """
+import math
 from typing import Dict, List, Tuple
-import pdb
+
 
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 import config as cnf
+
+pd.set_option('display.max_columns', None)
 
 def generate_lags(df: pd.DataFrame,
 				  lags: List[int]) -> pd.DataFrame:
@@ -212,25 +215,31 @@ def create_train_test_datasets(df_train: pd.DataFrame,
 	"""
 	# compute X_train
 	df_train_tmp = melt_time_series(df_train)
+
+
 	df_train_scaled, standardizers = normalize_data(df_train_tmp)
 	df_X_train = generate_lags(df_train_scaled, lags)
 	df_X_y_train = generate_steps_ahead(df_X_train, steps_ahead)
 	# identify columns related to lags or steps ahead
-	df_X_y_train.columns
+	#df_X_y_train.columns
 	lag_cols = [col for col in df_X_y_train.columns if ('lag_' in col)]
 	step_cols = [col for col in df_X_y_train.columns if ('step_' in col)]
 	# drop rows where lags are not filled (beginning all series)
 	df_X_y_train.dropna(subset=lag_cols, inplace=True)
 
+
 	# generate df_X_test
 	df_test_tmp = melt_time_series(df_test)
+	#print('df_test in cttd:\n{}'.format(df_test.head(50)))
 	# df_test_scaled, test_standardizers = normalize_data(df_test_tmp)
 	df_X_test_ext, df_train_last = create_test_set(df_X_y_train, df_test_tmp, standardizers)
 	df_X_test_val = generate_lags(df_X_test_ext, lags)
 	df_X_y_test_val = generate_steps_ahead(df_X_test_val, steps_ahead)
 	# remove rows with NaNs to clean up train and test set
+	#print('df_X_y_test_val in cttd:\n{}'.format(df_X_y_test_val.head(50)))
 	df_X_y_test_val.dropna(inplace=True)
 	df_X_y_train.dropna(inplace=True)
+	
 
 	# creating X_train and y_train numpy array
 	df_X_y_train.drop(['V1', 'timestamp'], axis=1, inplace=True)
@@ -238,11 +247,10 @@ def create_train_test_datasets(df_train: pd.DataFrame,
 	lag_cols.append('value')  # add value to create data structure for y_train
 	y_train = np.asarray(df_X_y_train.drop(lag_cols, axis=1))
 	assert X_train.shape[0] == y_train.shape[0]
-
 	# create X_test and y_test
 	ts_order = df_X_y_test_val['V1'].reset_index(drop=True)
 	df_X_y_test_val.drop(['V1', 'timestamp'], axis=1, inplace=True)
-	X_test_val = np.asarray(df_X_y_test_val.drop(step_cols, axis=1))
+	#X_test_val = np.asarray(df_X_y_test_val.drop(step_cols, axis=1))
 	y_test = np.asarray(df_X_y_test_val.drop(lag_cols, axis=1))
 
 	# last train value setup
@@ -251,10 +259,13 @@ def create_train_test_datasets(df_train: pd.DataFrame,
 	X_test = np.asarray(df_train_last.drop(['timestamp'], axis=1))
 
 	# data shape checks
-	assert X_test.shape[0]*cnf.STEPS_AHEAD == y_test.shape[0], 'X_test * steps_ahead matches y_hat length'
+	# print('X_test shape: {}'.format(X_test.shape))
+	# print('y_test shape: {}'.format(y_test.shape))
+	# print('y_test:\n{}'.format(y_test))
+	assert X_test.shape[0]*cnf.STEPS_AHEAD == y_test.shape[0], 'X_test * steps_ahead matches y_test length'
 	assert X_train.shape[1] == X_test.shape[1]
 	assert y_train.shape[1] == y_test.shape[1]
-	return X_train, y_train, X_test, y_test, standardizers, ts_order, X_test_val
+	return X_train, y_train, X_test, y_test, standardizers, ts_order #, X_test_val
 
 
 def modify_timestamps(df: pd.DataFrame,
@@ -317,7 +328,76 @@ def create_test_set(df_train: pd.DataFrame,
 	return df_X_y_test_val, df_train_last
 
 
+def cv_train(df: pd.DataFrame,
+				cur_fold: int,
+				kfolds: int = cnf.KFOLD, 
+				steps_ahead: int = cnf.STEPS_AHEAD) -> pd.DataFrame:
+	"""
+	computes the kfold training set row based on total folds and current step
+	checks that step_ahead steps of forecast can still be obtained from df
+	Params:
+	-------
+	df : datafrom from groupby split process
+	cur_fold : current fold from cross validation
+	kfolds : total amount of folds
+	steps_ahead: forecasting steps
+	Returns:
+	-------
+	df_ret : dataframe containing the kfold training set
+	"""
+	df_data = df[df.notnull()].dropna(axis=1)
+	ts_tot_len = df_data.shape[1]-1 # -1 to account for V1 - name
+	length = math.ceil(ts_tot_len/kfolds+1)
+	train_section_end = length*cur_fold+1 # +1 to account for V1 column
+	test_section_end = train_section_end+steps_ahead+7 
+	if test_section_end <= df_data.shape[1]:
+		df_ret = df_data.iloc[:,:train_section_end]
+		#print('df_ret fold: {}\nlen: {}'.format(cur_fold, ts_tot_len))
 
+		df = df.append(df_ret)
+		#print(df)
+		df.reset_index(drop=True, inplace=True)
+		df = df[1:]
+		return df
+	else:
+		return None
+
+
+def cv_test(df: pd.DataFrame,
+				cur_fold: int,
+				kfolds: int = cnf.KFOLD, 
+				steps_ahead: int = cnf.STEPS_AHEAD) -> pd.DataFrame:
+	"""
+	computes the kfold test set row based on total folds and current step
+	checks that step_ahead steps of forecast can still be obtained from df
+	Params:
+	-------
+	df : datafrom from groupby split process
+	cur_fold : current fold from cross validation
+	kfolds : total amount of folds
+	steps_ahead: forecasting steps
+	Returns:
+	-------
+	df_ret : dataframe containing the kfold training set
+	"""
+	df_data = df[df.notnull()].dropna(axis=1)
+	ts_tot_len = df_data.shape[1]-1 # -1 to account for V1 - name
+	length = math.ceil(ts_tot_len/kfolds+1)
+	train_section_end = length*cur_fold+1 # +1 to account for V1 column
+	#  step_ahead+7 to allow for 7 steps ahead computation
+	test_section_end = train_section_end + steps_ahead+7
+	if test_section_end <= df_data.shape[1]:
+		# print('train_sec_end: {}'.format(train_section_end))
+		# print('test_sec_end: {}'.format(test_section_end))
+		df_ret = df_data.iloc[:,train_section_end:test_section_end]
+		# print('df_ret - cv_test: {}'.format(df_ret))
+		cols=['V2', 'V3', 'V4', 'V5','V6','V7','V8','V9','V10','V11','V12','V13', 'V14', 'V15']
+		df_ret.columns = cols
+		df_ret['V1'] = df_data.iloc[0,0]
+
+		return df_ret
+	else:
+		return None
 
 
 

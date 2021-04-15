@@ -87,32 +87,32 @@ def cluster(features: np.ndarray) -> None:
 	print("####kMeans compute top silhouette scores ####")
 	top_sil_score_indexes = utils.get_top_n_indexes(silhouette_scores, cnf.TOP_MODELS)
 	top_n_models = [kmeans_per_k[idx] for idx in top_sil_score_indexes]
-	# top_n_models = []
-	# for idx in top_sil_score_indexes:
-	#   top_n_models.append(kmeans_per_k[idx])
+	top_n_models = []
+	for idx in top_sil_score_indexes:
+	  top_n_models.append(kmeans_per_k[idx])
 
 
 
-	# create image - kMeans
-	# fig, ax = plt.subplots(figsize=(8, 5))
-	# ax = sns.lineplot(x=range(1, len(inertias) + 1), y=inertias)
-	# ax.set_title("kMeans - k for M4 time series selected features")
-	# ax.set_xlabel("# of k")
-	# ax.set_ylabel("Inertia")
-	# viz.save_fig('kmeans_daily_series')
+	#create image - kMeans
+	fig, ax = plt.subplots(figsize=(8, 5))
+	ax = sns.lineplot(x=range(1, len(inertias) + 1), y=inertias)
+	ax.set_title("kMeans - k for M4 time series selected features")
+	ax.set_xlabel("# of k")
+	ax.set_ylabel("Inertia")
+	viz.save_fig('kmeans_daily_series')
 
-	# # silhouette_scores viz
-	# fig, ax = plt.subplots(figsize=(8, 5))
-	# ax = sns.lineplot(x=range(1, len(silhouette_scores) + 1),
-	#                   y=silhouette_scores)
-	# ax.set_title('Silhouette Scores')
-	# ax.set_xlabel('k')
-	# ax.set_ylabel('Silhouette Score')
-	# viz.save_fig('kmeans_sil_score_daily_series')
+	# silhouette_scores viz
+	fig, ax = plt.subplots(figsize=(8, 5))
+	ax = sns.lineplot(x=range(1, len(silhouette_scores) + 1),
+	                  y=silhouette_scores)
+	ax.set_title('Silhouette Scores')
+	ax.set_xlabel('k')
+	ax.set_ylabel('Silhouette Score')
+	viz.save_fig('kmeans_sil_score_daily_series')
 
-	# Silhouette Diagrams
-	# viz.create_sil_diagram(kmeans_per_k, features, top_sil_score_indexes,
-	#                   "kmeans_sil_dia_daily_series", silhouette_scores)
+	#Silhouette Diagrams
+	viz.create_sil_diagram(kmeans_per_k, features, top_sil_score_indexes,
+	                  "kmeans_sil_dia_daily_series", silhouette_scores)
 	return top_n_models
 
 
