@@ -14,7 +14,7 @@ LAGS = [1,2,3,4,5,6,7]
 
 STEPS_AHEAD = 7
 
-MAX_CLUSTER = 20
+MAX_CLUSTER = 3
 
 MODELS_PATH = 'models'
 

@@ -1,6 +1,7 @@
 """
 This module handles the forecasting of the M4 time series.
 """
+from multiprocessing import Pool
 from typing import Dict, Tuple
 import statistics
 
@@ -185,6 +186,7 @@ def batch_forecasting(clustered_data: kmeans_data,
 	mase_cv_l = [] # hold mase results from cv
 	smape_m4_l = [] # hold smape results from cv
 	mase_m4_l = [] # hold mase results from cv
+
 	for k, classes in tqdm(clustered_data.items()): # each is model run
 		for class_label, data_dfs in classes.items():
 			print('Running {} k: {}, class: {} forecast'.format(cluster_type, k, class_label))
@@ -192,11 +194,11 @@ def batch_forecasting(clustered_data: kmeans_data,
 			df_train_class = data_dfs[0]
 			df_test_class = data_dfs[1]
 			df_ts_class = data_dfs[2]
+
 			smape_cv, mase_cv = run_cv_fc_process(df_train_class)
 
 			smape_m4, mase_m4 = run_forecasting_process(df_train_class,
 											df_test_class, df_ts_class)
-
 	
 			# get class ratio
 			class_size = df_train_class.shape[0]
@@ -220,6 +222,76 @@ def batch_forecasting(clustered_data: kmeans_data,
 	df_res = pd.DataFrame(data_d)
 
 	return df_res
+
+
+def batch_forecasting_pool(clustered_data: kmeans_data,
+						cluster_type: 'str',
+						p: Pool) -> pd.DataFrame:
+	"""
+	executes forecasting process on kMeans dictionary
+	and computes error metrics
+	Params:
+	-------
+	Returns:
+	--------
+
+	"""
+
+	args_l = []
+	for k, classes in tqdm(clustered_data.items()): # each is model run
+		for class_label, data_dfs in classes.items():
+			print('Running {} k: {}, class: {} forecast'.format(cluster_type, k, class_label))
+			# get class ratio
+			df_train_class = data_dfs[0]
+			df_test_class = data_dfs[1]
+			df_ts_class = data_dfs[2]
+
+			input = (k, class_label, df_train_class, df_test_class, df_ts_class)
+			args_l.append(input)
+
+	res_data = p.starmap(forecasting_worker, args_l)
+
+	# closing the pool
+	p.close()
+	p.join()
+	
+
+	df_res = pd.DataFrame(res_data, columns=['k', 'class_label', 'class_size',\
+											'smape_cv', 'mase_cv',
+											'smape_m4', 'mase_m4'])
+
+	df_res['cluster_type'] = cluster_type
+
+	return df_res
+
+
+def forecasting_worker(k: int, class_label: str,
+					df_train_class: pd.DataFrame,
+					df_test_class: pd.DataFrame,
+					df_ts_class: pd.DataFrame) -> Tuple[int, str, int,
+												int, int, int, int]:
+	"""
+	forecasting worker that executes nn
+	training for cross validation and full run
+	Params:
+	Returns:
+	k : number of clusters
+	class_label : class label of currently processed class
+	class_size : size of the current class
+	smape_cv : sMAPE from cross-validation
+	mase_cv : MASE from cross-validation
+	smape_m4 : sMAPE from forecasting entire dataframe
+	mase_m4 : MASE from forecasting entire dataframe
+	"""
+	smape_cv, mase_cv = run_cv_fc_process(df_train_class)
+	smape_m4, mase_m4 = run_forecasting_process(df_train_class,
+											df_test_class, df_ts_class)
+
+	# get class ratio
+	class_size = df_train_class.shape[0]
+	return k, class_label, class_size,\
+			smape_cv, mase_cv, smape_m4,\
+			mase_m4
 
 
 

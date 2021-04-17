@@ -1,7 +1,7 @@
 """
 This module contains the main logic
 """
-
+from multiprocessing import Pool, cpu_count
 import os
 import time
 
@@ -55,12 +55,14 @@ if __name__ == "__main__":
 		print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
 	# restrict data for development
-	df_train = df_train.iloc[:25,0:93]
-	df_test = df_test.iloc[:25,:]
+	df_train = df_train.iloc[:5,0:93]
+	df_test = df_test.iloc[:5,:]
 
 	# format data for tsfresh
 	df_ts = pp.melt_time_series(df_train)
 
+	
+	# generate features from time series
 	features = fe.generate_features(df_ts)
 	print('#### feature extraction completed ####')
 	print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
@@ -83,14 +85,20 @@ if __name__ == "__main__":
 
 	# running clustered time series
 	print('#### Starting Forecast of identified clusters ####')
-	df_res_kmeans = fc.batch_forecasting(clustered_data, 'kMeans')
+	num_proc = cpu_count() - 1
+	p = Pool(num_proc)
+	df_res_kmeans = fc.batch_forecasting_pool(clustered_data, 'kMeans', p)
+	#df_res_kmeans = fc.batch_forecasting(clustered_data, 'kMeans')
 
 	print('#### Forecast of identified completed ####')
 	print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
 	# running randomly clustered time series
 	print('#### Starting Forecast of random clusters ####')
-	df_res_rnd = fc.batch_forecasting(clustered_data_rnd, 'random')
+	num_proc = cpu_count() - 1
+	p = Pool(num_proc)
+	df_res_rnd = fc.batch_forecasting_pool(clustered_data_rnd, 'random', p)
+	#df_res_rnd = fc.batch_forecasting(clustered_data_rnd, 'random')
 
 	print('#### Forecast of random clusters completed ####')
 	print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
@@ -103,7 +111,7 @@ if __name__ == "__main__":
 													df_ts)
 	df_k_1 = pd.DataFrame({'k': 0,
 						  'class_label': 0,
-						  'cluster_type': None,
+						  'cluster_type': 'all_records',
 						  'class_size': df_train.shape[0],
 						  'smape_cv': smape_cv,
 						  'mase_cv': mase_cv,
