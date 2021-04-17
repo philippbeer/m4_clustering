@@ -11,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 import config as cnf
 
-pd.set_option('display.max_columns', None)
+#pd.set_option('display.max_columns', None)
 
 def generate_lags(df: pd.DataFrame,
 				  lags: List[int]) -> pd.DataFrame:

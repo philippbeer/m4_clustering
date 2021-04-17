@@ -133,6 +133,10 @@ def get_class_label(df: pd.DataFrame, model: KMeans,
 	df : enhanced df
 	"""
 	ts_id = df.iloc[0]['V1']
+	print('ts_index_l:\n{}'.format(ts_index_l))
+	print('ts_id: {}'.format(ts_id))
+	print('df:\n{}'.format(df))
+
 	class_label_id = ts_index_l.index(ts_id)
 	class_label = model.labels_[class_label_id]
 	df['k'] = k

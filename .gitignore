@@ -4,3 +4,4 @@
 /scores_bkp/*
 *.csv
 \#*\#
+.DS_Store

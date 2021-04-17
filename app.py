@@ -54,10 +54,11 @@ if __name__ == "__main__":
 		print('#### sampling completed ####')
 		print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
-	# format data for tsfresh
+	# restrict data for development
 	df_train = df_train.iloc[:25,0:93]
 	df_test = df_test.iloc[:25,:]
 
+	# format data for tsfresh
 	df_ts = pp.melt_time_series(df_train)
 
 	features = fe.generate_features(df_ts)
