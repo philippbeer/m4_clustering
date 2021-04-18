@@ -16,6 +16,9 @@ from tsfresh.utilities.dataframe_functions import impute, make_forecasting_frame
 
 import config as cnf
 
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
+
 def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 	"""
 	extract features from time series selected for their relevance to forecasting
@@ -27,9 +30,11 @@ def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 	-------
 	features_filtered : numpy array containing the 
 	"""
-	if os.path.isfile('extracted_features.csv'):
+	if os.path.isfile(cnf.DATA+'{}_extracted_features.csv'\
+						.format(cnf.RUN_TYPE)):
 		print('#### Features file exist - loading #######')
-		extracted_features = pd.read_csv('extracted_features.csv')
+		extracted_features = pd.read_csv(cnf.DATA+'{}_extracted_features.csv'\
+						.format(cnf.RUN_TYPE))
 		extracted_features.rename(columns={'Unnamed: 0': 'Index'}, inplace=True)
 		extracted_features.set_index('Index', inplace=True)
 
@@ -39,21 +44,17 @@ def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 		# needs to be done for each time series
 
 		l = list(df['V1'].unique()) # getting all different time series from the list
-		# df_fc = pd.DataFrame()
-		# y = pd.Series()
 		fc_param = dict()
-		print('####  creating forecasting frame #######')
+		print('####  creating forecasting frame ####')
 		for elm in l:
 			print('#### Extr. and selecting features for\
-					 series {} of {} #######'\
+					 series {} of {} ####'\
 					.format(l.index(elm)+1,len(l)))
 			df_tmp = df[df['V1']==elm]
 			df_fc, y = make_forecasting_frame(df_tmp['value'],kind=elm,
 										   rolling_direction=1,
 										   max_timeshift=7)
 			
-			# print('df_fc shape: {}'.format(df_fc.shape))
-			# print('df_fc: {}'.format(df_fc.head(25)))
 			
 			extracted_features = extract_features(df_fc,
 									column_id='id',
@@ -62,7 +63,13 @@ def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 									impute_function=impute,
 									default_fc_parameters=EfficientFCParameters())
 
-			y.index = pd.MultiIndex.from_tuples(zip(['id']*len(y.index), y.index))
+			# verify matching index structure
+			if y.index[0] in extracted_features.index:
+				# do nothing as the indexes are in the same structure
+				pass
+			else:
+				# modify y index to match extracted features index
+				y.index = pd.MultiIndex.from_tuples(zip(['id']*len(y.index), y.index))
 
 			selected_features = select_features(extracted_features, y)
 
@@ -75,15 +82,9 @@ def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 			for key in fc_param['value']:
 				fc_param_t.update({key : fc_param['value'][key]})
 			
-		#print('fc_param: {}'.format(fc_param))
 		
 		print('#### Extracting relevant fts for all series ####')
-		# df_fc, y = make_forecasting_frame( df['value'],
-		# 									kind='V1',
-		# 									rolling_direction=1,
-		# 									max_timeshift=7
-		# 									)
-		# print('df_fc: {}'.format(df_fc.head()))
+
 		extracted_features = extract_features(df,
 											column_id='V1',
 											column_sort='timestamp',
@@ -91,8 +92,8 @@ def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 											impute_function=impute,
 											default_fc_parameters=fc_param_t)
 
-		print('extr. ft.:\n{}'.format(extracted_features))
-		extracted_features.to_csv('extracted_features.csv')
+		extracted_features.to_csv(cnf.DATA+'{}_extracted_features.csv'\
+									.format(cnf.RUN_TYPE))
 
 	return extracted_features
 
@@ -108,9 +109,11 @@ def generate_features_pool(df: pd.DataFrame, p: Pool) -> pd.DataFrame:
 	-------
 	features_filtered : numpy array containing the 
 	"""
-	if os.path.isfile('extracted_features.csv'):
+	if os.path.isfile(cnf.DATA+'{}_extracted_features.csv'\
+						.format(cnf.RUN_TYPE)):
 		print('#### Features file exist - loading #######')
-		extracted_features = pd.read_csv('extracted_features.csv')
+		extracted_features = pd.read_csv(cnf.DATA+'{}_extracted_features.csv'\
+						.format(cnf.RUN_TYPE))
 		extracted_features.rename(columns={'Unnamed: 0': 'Index'}, inplace=True)
 		extracted_features.set_index('Index', inplace=True)
 
@@ -163,8 +166,8 @@ def generate_features_pool(df: pd.DataFrame, p: Pool) -> pd.DataFrame:
 											impute_function=impute,
 											default_fc_parameters=fc_param_res)
 
-		print('extr. ft.:\n{}'.format(extracted_features))
-		extracted_features.to_csv('extracted_features.csv')
+		extracted_features.to_csv(cnf.DATA+'{}_extracted_features.csv'\
+								.format(cnf.RUN_TYPE))
 
 	return extracted_features
 

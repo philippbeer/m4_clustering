@@ -26,36 +26,44 @@ if __name__ == "__main__":
 	start = time.time()
 
 	# Load M4 data
-	print('#### reading CSV files ####')
-	if os.path.isfile('df_train_sample.csv') and\
-			os.path.isfile('df_test_sample.csv'):
-		df_train = pd.read_csv('df_train_sample.csv')
-		df_test = pd.read_csv('df_test_sample.csv')
+	if not os.path.exists('data'):
+		os.makedirs('data')
+	print('#### reading M4 data files ####')
+	if os.path.isfile(cnf.DATA+'df_{}_train_sample.csv'.format(cnf.RUN_TYPE)) and\
+			os.path.isfile(cnf.DATA+'df_{}_test_sample.csv'.format(cnf.RUN_TYPE)):
+		df_train = pd.read_csv(cnf.DATA+'df_{}_train_sample.csv'.format(cnf.RUN_TYPE))
+		df_test = pd.read_csv(cnf.DATA+'df_{}_test_sample.csv'.format(cnf.RUN_TYPE))
 		print('### local sample files read ###')
 		print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 	else:
-		train = pd.read_csv(cnf.DAILY_TRAIN)
-		test = pd.read_csv(cnf.DAILY_TEST)
+		train = pd.read_csv(cnf.CUR_RUN_TRAIN)
+		test = pd.read_csv(cnf.CUR_RUN_TEST)
 		elapsed = time.time()
 		print('#### finished reading CSV files####')
 		print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
-		# sample training data
-		print('#### beginning sampling of time series ####')
-		df_train = train.sample(frac=cnf.SAMPLING)
-		# restrict test data to sampled training data
-		df_test = test.iloc[df_train.index]
+		# sample training data if set
+		if cnf.SAMPLING:
+			print('#### beginning sampling of time series ####')
+			df_train = train.sample(frac=cnf.SAMPLING_RATE)
+			# restrict test data to sampled training data
+			df_test = test.iloc[df_train.index]
+				# write sample to local file for faster loading
+			if not os.path.isfile(cnf.DATA+'df_{}_train_sample.csv'.format(cnf.RUN_TYPE)) and\
+				not os.path.isfile(cnf.DATA+'df_{}_test_sample.csv'.format(cnf.RUN_TYPE)):
+				df_train.to_csv(cnf.DATA+'df_{}_train_sample.csv'.format(cnf.RUN_TYPE),
+								index=False)
+				df_test.to_csv(cnf.DATA+'df_{}_test_sample.csv'.format(cnf.RUN_TYPE),
+								index=False)
 
-	# write sample to local file for faster loading
-	if not os.path.isfile('df_train_sample.csv') and\
-			not os.path.isfile('df_test_sample.csv'):
-		df_train.to_csv('df_train_sample.csv', index=False)
-		df_test.to_csv('df_test_sample.csv', index=False)
-
-		print('#### sampling completed ####')
-		print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
+				print('#### sampling completed ####')
+				print('#### {:3.2f}s elapsed ####'.format(time.time() - start))		
+		else:
+			print('#### Running with complete dataset ####')
+			df_train = train
+			df_test = test
 
 	# restrict data for development
-	df_train = df_train.iloc[:5,0:93]
+	df_train = df_train.iloc[:5,0:200]
 	df_test = df_test.iloc[:5,:]
 
 	# format data for tsfresh
@@ -63,6 +71,7 @@ if __name__ == "__main__":
 
 	
 	# generate features from time series
+	print('#### Starting feature extraction ####')
 	features = fe.generate_features(df_ts)
 	print('#### feature extraction completed ####')
 	print('#### {:3.2f}s elapsed ####'.format(time.time() - start))

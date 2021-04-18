@@ -259,8 +259,8 @@ def create_train_test_datasets(df_train: pd.DataFrame,
 	X_test = np.asarray(df_train_last.drop(['timestamp'], axis=1))
 
 	# data shape checks
-	# print('X_test shape: {}'.format(X_test.shape))
-	# print('y_test shape: {}'.format(y_test.shape))
+	print('X_test shape: {}'.format(X_test.shape))
+	print('y_test shape: {}'.format(y_test.shape))
 	# print('y_test:\n{}'.format(y_test))
 	assert X_test.shape[0]*cnf.STEPS_AHEAD == y_test.shape[0], 'X_test * steps_ahead matches y_test length'
 	assert X_train.shape[1] == X_test.shape[1]
@@ -391,7 +391,11 @@ def cv_test(df: pd.DataFrame,
 		# print('test_sec_end: {}'.format(test_section_end))
 		df_ret = df_data.iloc[:,train_section_end:test_section_end]
 		# print('df_ret - cv_test: {}'.format(df_ret))
-		cols=['V2', 'V3', 'V4', 'V5','V6','V7','V8','V9','V10','V11','V12','V13', 'V14', 'V15']
+		cols = []
+		for i in range(2, len(df_ret.columns)+2):
+			col = 'V{}'.format(i)
+			cols.append(col)
+		# cols=['V2', 'V3', 'V4', 'V5','V6','V7','V8','V9','V10','V11','V12','V13', 'V14', 'V15']
 		df_ret.columns = cols
 		df_ret['V1'] = df_data.iloc[0,0]
 

@@ -32,11 +32,12 @@ def cluster(features: np.ndarray) -> None:
 	inertias = []
 	silhouette_scores = []
 
-	if os.path.exists(cnf.MODELS_PATH) and\
-		os.path.exists(cnf.SCORES_FOLDER_PATH):
+	if os.path.isfile(cnf.SCORES_FOLDER_PATH+'/'+cnf.SIL_SCORES_FILE_PATH):
 		print("#### Reading stored kMeans models ###")
 		all_files = os.listdir(cnf.MODELS_PATH)
 		all_files = filter(lambda x: x[-4:] == '.pkl', all_files)
+		# filtering files from current run type
+		all_files = filter(lambda x: x[:len(cnf.RUN_TYPE)] == cnf.RUN_TYPE, all_files)
 		kmeans_per_k = [pickle.load(open(cnf.MODELS_PATH+'/'+file_name, 'rb')) for file_name in all_files]
 
 		# reading scores
@@ -61,7 +62,8 @@ def cluster(features: np.ndarray) -> None:
 			os.mkdir(cnf.MODELS_PATH)
 
 		# save models locally
-		[pickle.dump(model[1], open(cnf.MODELS_PATH+'/kmeans_{}.pkl'.format(model[0]+2), 'wb')) for model in enumerate(kmeans_per_k)]
+		[pickle.dump(model[1], open(cnf.MODELS_PATH+'/{}_kmeans_{}.pkl'\
+			.format(cnf.RUN_TYPE, model[0]+2), 'wb')) for model in enumerate(kmeans_per_k)]
 		print("####kMeans models generated and saved locally ####")
 
 		if not os.path.exists(cnf.SCORES_FOLDER_PATH):
@@ -96,23 +98,24 @@ def cluster(features: np.ndarray) -> None:
 	#create image - kMeans
 	fig, ax = plt.subplots(figsize=(8, 5))
 	ax = sns.lineplot(x=range(1, len(inertias) + 1), y=inertias)
-	ax.set_title("kMeans - k for M4 time series selected features")
+	ax.set_title("{} time series - kMeans: k for M4 selected features".format(cnf.RUN_TYPE))
 	ax.set_xlabel("# of k")
 	ax.set_ylabel("Inertia")
-	viz.save_fig('kmeans_daily_series')
+	viz.save_fig('{}_kmeans_series_inertia'.format(cnf.RUN_TYPE))
 
 	# silhouette_scores viz
 	fig, ax = plt.subplots(figsize=(8, 5))
 	ax = sns.lineplot(x=range(1, len(silhouette_scores) + 1),
 	                  y=silhouette_scores)
-	ax.set_title('Silhouette Scores')
+	ax.set_title('{} - Silhouette Scores'.format(cnf.RUN_TYPE))
 	ax.set_xlabel('k')
-	ax.set_ylabel('Silhouette Score')
-	viz.save_fig('kmeans_sil_score_daily_series')
+	ax.set_ylabel('{} - Silhouette Score'.format(cnf.RUN_TYPE))
+	viz.save_fig('{}_kmeans_sil_score_series'.format(cnf.RUN_TYPE))
 
 	#Silhouette Diagrams
 	viz.create_sil_diagram(kmeans_per_k, features, top_sil_score_indexes,
-	                  "kmeans_sil_dia_daily_series", silhouette_scores)
+	                  "{}_kmeans_sil_dia_series".format(cnf.RUN_TYPE),
+	                   silhouette_scores)
 	return top_n_models
 
 
