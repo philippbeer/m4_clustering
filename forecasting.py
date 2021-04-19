@@ -283,6 +283,7 @@ def forecasting_worker(k: int, class_label: str,
 	smape_m4 : sMAPE from forecasting entire dataframe
 	mase_m4 : MASE from forecasting entire dataframe
 	"""
+	print('forecasting worker started for k: {}\nclass_label: {}'.format(k, class_label))
 	smape_cv, mase_cv = run_cv_fc_process(df_train_class)
 	smape_m4, mase_m4 = run_forecasting_process(df_train_class,
 											df_test_class, df_ts_class)

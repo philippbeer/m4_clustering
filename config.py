@@ -37,7 +37,7 @@ LAGS = [1,2,3,4,5,6,7]
 
 STEPS_AHEAD = 7
 
-MAX_CLUSTER = 3
+MAX_CLUSTER = 20
 
 MODELS_PATH = 'models'
 
@@ -53,7 +53,7 @@ TOP_MODELS = 3
 
 MAX_TIMESHIFT = 7
 
-KFOLD = 3
+KFOLD = 10
 
 
 # pd.set_option('display.max_rows', 500)
