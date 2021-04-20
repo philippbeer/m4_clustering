@@ -38,10 +38,10 @@ def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 						.format(cnf.RUN_TYPE))
 		extracted_features.rename(columns={'Unnamed: 0': 'Index'}, inplace=True)
 		extracted_features.set_index('Index', inplace=True)
-                standard_scaler = preprocessing.StandardScaler()
-                extracted_features_scaled = pd.DataFrame(standard_scaler.fit_transform(extract_features),
-                                                         columns=extract_features.columns,
-                                                         index=extract_features.index)
+		standard_scaler = preprocessing.StandardScaler()
+        extracted_features_scaled = pd.DataFrame(standard_scaler.fit_transform(extract_features),
+        	columns=extract_features.columns,
+            index=extract_features.index)
 
 		return extracted_features_scaled
 	else:
