@@ -1,3 +1,4 @@
+
 """
 This module contains the main logic
 """
@@ -69,10 +70,10 @@ if __name__ == "__main__":
 	# format data for tsfresh
 	df_ts = pp.melt_time_series(df_train)
 
-	
+        
 	# generate features from time series
 	print('#### Starting feature extraction ####')
-	features = fe.generate_features(df_ts)
+	features = fe.generate_features(df_ts) 
 	print('#### feature extraction completed ####')
 	print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
 
@@ -97,7 +98,6 @@ if __name__ == "__main__":
 	num_proc = cpu_count() - 1
 	p = Pool(num_proc)
 	df_res_kmeans = fc.batch_forecasting_pool(clustered_data, 'kMeans', p)
-	#df_res_kmeans = fc.batch_forecasting(clustered_data, 'kMeans')
 
 	print('#### Forecast of identified completed ####')
 	print('#### {:3.2f}s elapsed ####'.format(time.time() - start))
