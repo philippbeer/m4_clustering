@@ -39,9 +39,9 @@ def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 		extracted_features.rename(columns={'Unnamed: 0': 'Index'}, inplace=True)
 		extracted_features.set_index('Index', inplace=True)
 		standard_scaler = preprocessing.StandardScaler()
-        extracted_features_scaled = pd.DataFrame(standard_scaler.fit_transform(extract_features),
-        	columns=extract_features.columns,
-            index=extract_features.index)
+		extracted_features_scaled = pd.DataFrame(standard_scaler.fit_transform(extract_features.values),
+			columns=extract_features.columns,
+			index=extract_features.index)
 
 		return extracted_features_scaled
 	else:
@@ -97,16 +97,16 @@ def generate_features(df: pd.DataFrame) -> pd.DataFrame:
 											impute_function=impute,
 											default_fc_parameters=fc_param_t)
 
-                standard_scaler = preprocessing.StandardScaler()
-                extracted_features_scaled = pd.DataFrame(standard_scaler.fit_transform(extract_features),
-                                                         columns=extract_features.columns,
-                                                         index=extract_features.index)
+		standard_scaler = preprocessing.StandardScaler()
+		extracted_features_scaled = pd.DataFrame(standard_scaler.fit_transform(extract_features.values),
+														 columns=extract_features.columns,
+														 index=extract_features.index)
 
 
 		extracted_features.to_csv(cnf.DATA+'{}_extracted_features.csv'\
 									.format(cnf.RUN_TYPE))
-                extract_features_scaled.to_csv(cnf.Data+'{}_extr_features_scaled.csv'\
-                                               .scaled(cnf.RUN_TYPE))
+		extract_features_scaled.to_csv(cnf.Data+'{}_extr_features_scaled.csv'\
+											   .scaled(cnf.RUN_TYPE))
 
 	return extracted_features_scaled
 
